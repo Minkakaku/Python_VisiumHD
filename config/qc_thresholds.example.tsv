@@ -1,0 +1,3 @@
+sample	min_genes	max_genes	max_pct_counts_mt	min_log10GenesPerUMI
+sample1	20	500	20	0.70
+sample2	20	500	20	0.70

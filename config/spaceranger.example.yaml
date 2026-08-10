@@ -1,0 +1,14 @@
+id: sample1_visium_hd
+transcriptome: /path/to/refdata-gex
+fastqs:
+  - /path/to/fastqs
+sample: sample1
+image: /path/to/tissue_image.tif
+slide: H1-XXXXXXX
+area: A1
+probe_set: /path/to/probe_set.csv
+cytaimage: /path/to/cytassist_image.tif
+loupe_alignment: /path/to/alignment.json
+localcores: 32
+localmem: 128
+create_bam: false

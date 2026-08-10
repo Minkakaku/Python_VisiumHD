@@ -1,0 +1,21 @@
+name: visium-hd-gpu
+channels:
+  - rapidsai
+  - conda-forge
+  - nvidia
+dependencies:
+  - python>=3.10
+  - cuda-version>=12
+  - rapids-singlecell
+  - cupy
+  - rmm
+  - scanpy>=1.10
+  - anndata>=0.10
+  - harmonypy
+  - kneed
+  - matplotlib
+  - pandas
+  - pyarrow
+  - python-igraph
+  - leidenalg
+  - pip

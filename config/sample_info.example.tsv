@@ -1,0 +1,3 @@
+sample	group	spaceranger_dir	input_mode	table_key	shape_key	microns_per_unit
+sample1	CON	data/raw/sample1	bins	NA	NA	NA
+sample2	EXP	data/raw/sample2	bins	NA	NA	NA
