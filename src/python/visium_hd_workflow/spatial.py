@@ -4,9 +4,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, ttest_ind
 
 from .runtime import group_palette, save_figure, spatial_scatter, write_result_readme
+
+
+NPG15 = (
+    "#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F",
+    "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85",
+    "#D3B3E5", "#E6A176", "#5F9F8B", "#6C79A8", "#C85C74",
+)
 
 
 # 功能：稳定取得分类顺序，保证不同样本的邻域组成列完全一致。
@@ -14,22 +21,100 @@ def categories(values):
     return values.astype("category").cat.categories.astype(str).tolist()
 
 
-# 功能：对样本级汇总执行双组 Mann-Whitney U 检验，而不是把每个 bin 当重复。
-def two_group_tests(table, value_col, key_cols, group_col="group"):
+# 功能：对样本级汇总执行双组检验，而不是把每个 bin 当重复。
+def two_group_tests(table, value_col, key_cols, group_col="group", method="mannwhitney"):
     groups = table[group_col].drop_duplicates().tolist()
     rows = []
     if len(groups) != 2:
-        return pd.DataFrame(columns=[*key_cols, "group_1", "group_2", "p_value"])
+        return pd.DataFrame(columns=[*key_cols, "group_1", "group_2", "test_method", "p_value", "p_signif"])
     for keys, data in table.groupby(key_cols, observed=True):
         keys = keys if isinstance(keys, tuple) else (keys,)
         x = data.loc[data[group_col] == groups[0], value_col].dropna()
         y = data.loc[data[group_col] == groups[1], value_col].dropna()
-        p_value = mannwhitneyu(x, y).pvalue if len(x) and len(y) else np.nan
+        if method == "welch_ttest":
+            p_value = ttest_ind(x, y, equal_var=False).pvalue if len(x) >= 2 and len(y) >= 2 else np.nan
+        elif method == "mannwhitney":
+            p_value = mannwhitneyu(x, y).pvalue if len(x) and len(y) else np.nan
+        else:
+            raise ValueError(f"Unsupported two-group test: {method}")
+        p_signif = "***" if p_value < 0.001 else "**" if p_value < 0.01 else "*" if p_value < 0.05 else ""
         rows.append(
             dict(zip(key_cols, keys))
-            | {"group_1": groups[0], "group_2": groups[1], "p_value": p_value}
+            | {"group_1": groups[0], "group_2": groups[1], "test_method": method,
+               "p_value": p_value, "p_signif": p_signif}
         )
     return pd.DataFrame(rows)
+
+
+# 功能：按 lyh CN 流程绘制样本比例箱线图和组内合并比例 alluvial 图。
+def cn_group_comparison(sample_table, out_dir, n_clusters, group_colors=None):
+    import seaborn as sns
+    from matplotlib.path import Path as MplPath
+    from matplotlib.patches import PathPatch
+    from matplotlib.ticker import PercentFormatter
+
+    out_dir = Path(out_dir)
+    cn_order = [f"CN{x}" for x in range(n_clusters)]
+    group_order = sample_table["group"].drop_duplicates().tolist()
+    palette = group_palette(group_order, group_colors)
+    tests = two_group_tests(sample_table, "proportion", ["CN"], method="welch_ttest")
+
+    fig, ax = plt.subplots(figsize=(max(7, n_clusters * 0.72), 4.6))
+    sns.boxplot(data=sample_table, x="CN", y="proportion", hue="group", order=cn_order,
+                hue_order=group_order, palette=palette, showfliers=False, width=0.55,
+                linewidth=0.75, ax=ax)
+    sns.stripplot(data=sample_table, x="CN", y="proportion", hue="group", order=cn_order,
+                  hue_order=group_order, palette=palette, dodge=True, legend=False,
+                  size=4.2, linewidth=0.4, edgecolor="white", ax=ax)
+    pad = max(0.005, sample_table["proportion"].max() * 0.06)
+    top = sample_table["proportion"].max()
+    for i, cn_id in enumerate(cn_order):
+        label = tests.loc[tests["CN"].astype(str) == cn_id, "p_signif"]
+        if len(label) and label.iloc[0]:
+            y = sample_table.loc[sample_table["CN"].astype(str) == cn_id, "proportion"].max() + pad
+            ax.text(i, y, label.iloc[0], ha="center", va="bottom", fontsize=10)
+            top = max(top, y + pad)
+    ax.set(xlabel="", ylabel="CN proportion", ylim=(0, top + pad))
+    ax.tick_params(axis="x", rotation=45, length=0)
+    ax.legend(title="", bbox_to_anchor=(1.02, 1), loc="upper left", frameon=False)
+    ax.grid(False)
+    sns.despine(ax=ax)
+    save_figure(out_dir / f"CNs_{n_clusters}_proportions_by_sample", fig, dpi=600)
+
+    pooled = sample_table.pivot_table(index="group", columns="CN", values="n_cells", aggfunc="sum", fill_value=0)
+    pooled = pooled.reindex(index=group_order, columns=cn_order, fill_value=0)
+    pooled = pooled.div(pooled.sum(axis=1), axis=0)
+    colors = dict(zip(cn_order, NPG15[:n_clusters]))
+    x = np.arange(len(group_order))
+    bottoms = np.zeros(len(group_order))
+    fig, ax = plt.subplots(figsize=(4.8, 5.2))
+    for cn_id in cn_order:
+        values = pooled[cn_id].to_numpy()
+        tops = bottoms + values
+        for j in range(len(group_order) - 1):
+            left, right = x[j] + 0.18, x[j + 1] - 0.18
+            control_1, control_2 = left + (right - left) * 0.45, left + (right - left) * 0.55
+            path = MplPath(
+                [(left, bottoms[j]), (control_1, bottoms[j]), (control_2, bottoms[j + 1]),
+                 (right, bottoms[j + 1]), (right, tops[j + 1]),
+                 (control_2, tops[j + 1]), (control_1, tops[j]), (left, tops[j]),
+                 (left, bottoms[j])],
+                [MplPath.MOVETO, MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4,
+                 MplPath.LINETO, MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4,
+                 MplPath.CLOSEPOLY],
+            )
+            ax.add_patch(PathPatch(path, facecolor=colors[cn_id], edgecolor="none", alpha=0.68))
+        ax.bar(x, values, bottom=bottoms, width=0.36, color=colors[cn_id],
+               edgecolor="black", linewidth=0.55, label=cn_id, zorder=2)
+        bottoms = tops
+    ax.set(xlabel="", ylabel="Percentage", ylim=(0, 1), xticks=x, xticklabels=group_order)
+    ax.yaxis.set_major_formatter(PercentFormatter(1))
+    ax.tick_params(axis="x", rotation=45, length=0)
+    ax.legend(title="", bbox_to_anchor=(1.02, 1), loc="upper left", frameon=False)
+    ax.grid(False)
+    sns.despine(ax=ax)
+    save_figure(out_dir / f"CNs_{n_clusters}_group_pooled_stacked_proportion", fig, dpi=600)
+    return tests
 
 
 # 功能：逐切片建立 kNN 空间图，计算注释网络中心性和可选 Moran's I。
@@ -143,24 +228,16 @@ def cell_neighborhoods(
     )
     save_figure(out_dir / f"CNs_{n_clusters}_log2_enrichment", grid.fig)
 
-    proportions = pd.crosstab(adata.obs["sample"], adata.obs[cn_col], normalize="index")
+    counts = pd.crosstab(adata.obs["sample"], adata.obs[cn_col])
     sample_groups = adata.obs[["sample", "group"]].drop_duplicates("sample")
-    long = proportions.reset_index().melt(id_vars="sample", var_name="CN", value_name="proportion")
+    long = counts.reset_index().melt(id_vars="sample", var_name="CN", value_name="n_cells")
     long = long.merge(sample_groups, on="sample", how="left")
+    long["proportion"] = long["n_cells"] / long.groupby("sample")["n_cells"].transform("sum")
     long.to_csv(out_dir / f"CNs_{n_clusters}_proportions_by_sample.tsv", sep="\t", index=False)
-    tests = two_group_tests(long, "proportion", ["CN"])
+    tests = cn_group_comparison(long, out_dir, n_clusters, group_colors)
     tests.to_csv(out_dir / f"CNs_{n_clusters}_group_tests.tsv", sep="\t", index=False)
 
-    palette = group_palette(long["group"].drop_duplicates(), group_colors)
-    fig, ax = plt.subplots(figsize=(max(8, n_clusters * 0.7), 5))
-    sns.boxplot(data=long, x="CN", y="proportion", hue="group", palette=palette, showfliers=False, ax=ax)
-    sns.stripplot(data=long, x="CN", y="proportion", hue="group", palette=palette, dodge=True, legend=False, ax=ax)
-    ax.set(xlabel="", ylabel="Bin proportion")
-    ax.legend(title="", bbox_to_anchor=(1.02, 1), loc="upper left")
-    ax.grid(False)
-    save_figure(out_dir / f"CNs_{n_clusters}_proportions_by_sample", fig)
-
-    cn_palette = dict(zip(adata.obs[cn_col].cat.categories, plt.get_cmap("tab20").colors))
+    cn_palette = dict(zip(adata.obs[cn_col].cat.categories, NPG15[:n_clusters]))
     for sample in adata.obs["sample"].drop_duplicates():
         tmp = adata[adata.obs["sample"] == sample]
         fig, ax = plt.subplots(figsize=(7, 7))
@@ -169,7 +246,7 @@ def cell_neighborhoods(
     write_result_readme(
         out_dir,
         "07 Cell neighborhood",
-        "对每个切片分别计算 kNN 标签组成，再用 MiniBatchKMeans 得到 CN。热图是相对全对象标签背景的 log2 富集；组间检验使用样本比例。",
+        "对每个切片分别计算 kNN 标签组成，再用 MiniBatchKMeans 得到 CN。热图是相对全对象标签背景的 log2 富集；按样本计算CN比例，双组比较使用Welch t-test，另输出组内合并比例alluvial图。",
     )
     return adata
 

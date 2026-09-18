@@ -19,12 +19,12 @@
 
 ## 原始文件与正式入口对应
 
-- `run_spacerangerv4.sh` → `src/run_spaceranger.py` + `config/spaceranger.example.yaml`
+- `run_spacerangerv4.sh` → `visium_hd_workflow.run_spaceranger` + 项目 `config/spaceranger.yaml`
 - `HD_V4.ipynb` → `io.py`、`qc.py`、`preprocessing.py`、`analysis.py`
-- `HDV4_cluster_gpu.ipynb` → `src/cluster_gpu.py`
+- `HDV4_cluster_gpu.ipynb` → `visium_hd_workflow.cluster_gpu`
 - `visium_hd_report.ipynb` → `steps.py` 和 01–09 结果目录
 - `CN.py` → `spatial.py` 中按样本隔离的 CN 方法
 
 ## 为什么没有正式 notebook
 
-notebook 包含运行状态、绝对路径和项目注释，难以复用和审计。它们原样保存在 `legacy/original/`；正式代码只提供函数与 `.py` 入口，实际项目在空的 `workflow/` 中追加步骤脚本。
+notebook 包含运行状态、绝对路径和项目注释，难以复用和审计。它们原样保存在 `legacy/original/`；正式代码只提供函数与 `.py` 入口，各项目在自己的 `workflow/` 中保留短步骤脚本。

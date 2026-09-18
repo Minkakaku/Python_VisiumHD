@@ -54,7 +54,7 @@ def read_microns_per_pixel(outs):
         value = json.loads(path.read_text(encoding="utf-8")).get("microns_per_pixel")
         if value is not None:
             return float(value)
-    raise FileNotFoundError("未找到 microns_per_pixel；请在 sample_info.tsv 填写 microns_per_unit。")
+    raise FileNotFoundError("未找到 microns_per_pixel；请在项目 samples.tsv 填写 microns_per_unit。")
 
 # 功能：读取 Space Ranger v4 分割结果，并按 instance_id 对齐 polygon 质心和表达表。
 def read_segmented_sample(spaceranger_dir, sample, group, table_key, shape_key, microns_per_unit=""):
@@ -102,17 +102,21 @@ def read_segmented_sample(spaceranger_dir, sample, group, table_key, shape_key, 
 
 
 # 功能：按样本表读取并合并多个切片，保证索引唯一且保留每个样本的空间元数据。
-def load_visium_hd_data(sample_info, bin_size=8):
+def load_visium_hd_data(sample_info, bin_size=8, base_dir=None):
     import anndata as ad
 
     sample_table = pd.read_csv(sample_info, sep="\t", dtype=str).fillna("")
+    base_dir = Path(base_dir or ".")
     objects = []
     sample_metadata = {}
     for row in sample_table.itertuples(index=False):
+        spaceranger_dir = Path(row.spaceranger_dir)
+        if not spaceranger_dir.is_absolute():
+            spaceranger_dir = base_dir / spaceranger_dir
         mode = (getattr(row, "input_mode", "") or "bins").lower()
         if mode == "segmented":
             obj = read_segmented_sample(
-                row.spaceranger_dir,
+                spaceranger_dir,
                 row.sample,
                 row.group,
                 row.table_key,
@@ -120,7 +124,7 @@ def load_visium_hd_data(sample_info, bin_size=8):
                 getattr(row, "microns_per_unit", ""),
             )
         else:
-            obj = read_binned_sample(row.spaceranger_dir, row.sample, row.group, bin_size)
+            obj = read_binned_sample(spaceranger_dir, row.sample, row.group, bin_size)
         sample_metadata[str(row.sample)] = obj.uns["visium_hd"]
         objects.append(obj)
 

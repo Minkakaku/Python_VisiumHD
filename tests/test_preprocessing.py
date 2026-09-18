@@ -5,6 +5,7 @@ import numpy as np
 from visium_hd_workflow.preprocessing import select_pcs_by_knee
 
 
+# 验证自动选择的 PC 数是有效的一基编号。
 class PCAKneeTests(unittest.TestCase):
     # 功能：验证自动 PCA 选择总是返回有效的 1-based PC 数量。
     def test_knee_is_valid_pc_count(self):

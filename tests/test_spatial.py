@@ -8,9 +8,11 @@ from visium_hd_workflow.spatial import (
     nearest_neighbor_table,
     neighborhood_composition,
     proximity_sample_summary,
+    two_group_tests,
 )
 
 
+# 使用小型合成对象验证空间邻居不会跨样本连接。
 class SpatialIsolationTests(unittest.TestCase):
     # 功能：构造两个坐标重叠的切片，验证算法仍按样本隔离。
     def setUp(self):
@@ -49,6 +51,17 @@ class SpatialIsolationTests(unittest.TestCase):
         exp_t_to_m = table.query("sample == 'EXP_1' and source == 'T' and target == 'M'")
         self.assertEqual(con_t_to_b["distance_um"].iloc[0], 8.0)
         self.assertEqual(exp_t_to_m["distance_um"].iloc[0], 80.0)
+
+    # 用两组三个样本的 CN 比例验证 Welch 检验及显著性标签。
+    def test_cn_welch_test_uses_sample_summaries(self):
+        table = pd.DataFrame({
+            "CN": ["CN0"] * 6,
+            "group": ["CON"] * 3 + ["EXP"] * 3,
+            "proportion": [0.10, 0.12, 0.11, 0.30, 0.32, 0.31],
+        })
+        result = two_group_tests(table, "proportion", ["CN"], method="welch_ttest")
+        self.assertEqual(result.loc[0, "test_method"], "welch_ttest")
+        self.assertEqual(result.loc[0, "p_signif"], "***")
 
 
 if __name__ == "__main__":

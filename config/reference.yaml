@@ -1,0 +1,3 @@
+# 与物种和参考有关的公共默认值。
+organism: Human
+species_mt_prefix: MT-

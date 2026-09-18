@@ -6,16 +6,13 @@ __pycache__/
 .idea/
 .vscode/
 
-data/raw/
-data/processed/*
-!data/processed/.gitkeep
-data/reference/*
-!data/reference/.gitkeep
-results/*
-!results/.gitkeep
-logs/*
-!logs/.gitkeep
-config/sample_info.tsv
-config/qc_thresholds.tsv
-config/cluster_annotation.tsv
-config/spaceranger.yaml
+projects/*/data/raw/*
+!projects/*/data/raw/.gitkeep
+projects/*/data/processed/*
+!projects/*/data/processed/.gitkeep
+projects/*/data/reference/*
+!projects/*/data/reference/.gitkeep
+projects/*/results/*
+!projects/*/results/.gitkeep
+projects/*/logs/*
+!projects/*/logs/.gitkeep

@@ -1,8 +1,9 @@
 import unittest
 
-from cluster_gpu import resolution_key
+from visium_hd_workflow.cluster_gpu import resolution_key
 
 
+# 验证 GPU 聚类分辨率对应的列名与下游配置一致，无需运行 GPU。
 class GPUClusterNamingTests(unittest.TestCase):
     # 功能：验证 GPU 聚类列名与正式配置一致。
     def test_resolution_key(self):

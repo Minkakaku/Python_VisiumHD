@@ -44,7 +44,8 @@ def run_spaceranger(config_file, log_file=None, dry_run=False):
     if dry_run:
         print(printable)
         return command
-    log_file = Path(log_file or f"logs/{config['id']}.spaceranger.log")
+    project_dir = config_file.parent.parent
+    log_file = Path(log_file) if log_file else project_dir / "logs" / f"{config['id']}.spaceranger.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
     with log_file.open("w", encoding="utf-8") as handle:
         handle.write(f"COMMAND\n{printable}\n\nOUTPUT\n")
@@ -56,7 +57,7 @@ def run_spaceranger(config_file, log_file=None, dry_run=False):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, help="YAML configuration file")
-    parser.add_argument("--log", help="log file; default logs/<id>.spaceranger.log")
+    parser.add_argument("--log", help="log file; default <project>/logs/<id>.spaceranger.log")
     parser.add_argument("--dry-run", action="store_true", help="print command without running")
     return parser.parse_args()
 

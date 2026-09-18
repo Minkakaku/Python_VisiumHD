@@ -1,8 +1,9 @@
 import unittest
 
-from run_spaceranger import build_spaceranger_command
+from visium_hd_workflow.run_spaceranger import build_spaceranger_command
 
 
+# 验证 YAML 参数可正确转换为 Space Ranger 命令，不执行外部程序。
 class SpaceRangerCommandTests(unittest.TestCase):
     # 功能：验证原始 v4 命令中的关键参数能由 YAML 模板生成。
     def test_build_command(self):

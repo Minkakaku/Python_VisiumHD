@@ -101,6 +101,7 @@ def threshold_candidates(
     return pd.DataFrame(rows)
 
 
+# 优先采用配置的样本色；其余样本按顺序使用 tab10 颜色。
 def _palette(samples, configured=None):
     import matplotlib.pyplot as plt
 
@@ -112,6 +113,7 @@ def _palette(samples, configured=None):
     }
 
 
+# 选择最接近目标分位数的候选阈值，并按样本建立索引。
 def _reference_rows(table, quantile):
     if table is None or table.empty:
         return None
@@ -124,6 +126,7 @@ def _reference_rows(table, quantile):
     return table.loc[np.isclose(table["lower_quantile"], selected)].set_index("sample")
 
 
+# 读取一个样本的阈值数值，缺失样本、列或值时返回 None。
 def _value(reference, sample, column):
     if reference is None or sample not in reference.index or column not in reference:
         return None
@@ -133,6 +136,7 @@ def _value(reference, sample, column):
     return float(value) if pd.notna(value) else None
 
 
+# 绘制基因数、计数、线粒体比例和复杂度的小提琴图，并叠加参考阈值。
 def _violin(data, samples, colors, reference, title, path, dpi):
     import matplotlib.pyplot as plt
 
@@ -182,6 +186,7 @@ def _violin(data, samples, colors, reference, title, path, dpi):
     save_figure(path, fig, dpi=dpi)
 
 
+# 绘制计数与基因数、复杂度的关系，按样本配色并叠加参考线。
 def _scatter(data, samples, colors, reference, title, path, dpi):
     import matplotlib.pyplot as plt
 
@@ -233,6 +238,7 @@ def _scatter(data, samples, colors, reference, title, path, dpi):
     save_figure(path, fig, dpi=dpi)
 
 
+# 展示各样本 QC 指标分布；绘图时截去最高 0.1% 的极端尾部。
 def _distributions(data, samples, colors, title, path, dpi):
     import matplotlib.pyplot as plt
 
@@ -279,6 +285,7 @@ def _distributions(data, samples, colors, title, path, dpi):
     save_figure(path, fig, dpi=dpi)
 
 
+# 逐样本绘制六边形密度图，并在对应坐标尺度上标记候选阈值。
 def _density(data, samples, reference, title, path, dpi):
     import matplotlib.pyplot as plt
 
@@ -352,6 +359,7 @@ def _density(data, samples, reference, title, path, dpi):
     save_figure(path, fig, dpi=dpi)
 
 
+# 比较不同候选分位数下的保留率，区分是否附加复杂度筛选。
 def _retention(candidates, colors, path, dpi):
     import matplotlib.pyplot as plt
 

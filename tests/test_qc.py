@@ -8,6 +8,7 @@ from visium_hd_workflow.qc_plots import (
 )
 
 
+# 构造两个样本的确定性 QC 指标表，供抽样、阈值和绘图测试复用。
 def _frame():
     rows = []
     for sample_index, sample in enumerate(("sample1", "sample2")):
@@ -28,6 +29,7 @@ def _frame():
     return pd.DataFrame(rows)
 
 
+# 验证每个样本分别抽样，并且固定种子得到相同结果。
 def test_sampling_is_per_sample_and_deterministic():
     frame = _frame()
     first = sample_plot_table(frame, n_per_sample=5, seed=1001)
@@ -36,6 +38,7 @@ def test_sampling_is_per_sample_and_deterministic():
     pd.testing.assert_frame_equal(first, second)
 
 
+# 验证候选表包含分割单元参考值，附加复杂度条件后保留率不会增加。
 def test_candidates_include_retention_and_optional_bin_references():
     candidates = threshold_candidates(
         _frame(),
@@ -52,9 +55,11 @@ def test_candidates_include_retention_and_optional_bin_references():
     assert candidates["min_log10GenesPerUMI"].eq(0.8).all()
 
 
+# 验证全样本及逐样本 QC 面板均输出 PNG/PDF，同时保存绘图输入表。
 def test_qc_review_writes_standard_and_per_sample_panels(tmp_path):
     frame = _frame().set_index("unit_id")
 
+    # 提供 QC 绘图所需的最小 obs/obs_names 接口，省去真实表达矩阵。
     class DummyAdata:
         obs = frame
         obs_names = frame.index

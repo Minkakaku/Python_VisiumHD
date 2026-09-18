@@ -1,0 +1,28 @@
+# 公共分析默认值；项目只需在 projects/<项目>/config/config.yaml 覆盖差异项。
+bin_size: 8
+
+qc_min_genes: 20
+qc_min_gene_quantile: 0.01
+qc_max_gene_quantile: 0.995
+qc_max_mt_percent: 20.0
+qc_min_complexity: 0.70
+qc_lower_candidate_quantiles: [0.01, 0.025, 0.05, 0.10, 0.15]
+qc_review_quantile: 0.10
+qc_plot_cells_per_sample: 50000
+
+n_top_genes: 3000
+n_neighbors: 20
+n_pcs: null
+max_pcs: 50
+use_harmony: true
+cluster_resolutions: [0.4, 0.5, 0.6, 0.7]
+resolution_key: res_0.7
+gpu_device: 0
+random_seed: 10
+
+spatial_genes: []
+moran_genes: []
+cn_neighbors: 10
+cn_clusters: [10, 15]
+proximity_radius_um: 50
+proximity_bins_um: [0, 50, 100, 150, 200]

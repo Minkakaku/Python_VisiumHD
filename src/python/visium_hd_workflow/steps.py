@@ -14,7 +14,7 @@ from .spatial import (
 # 功能：读取样本表中的 Space Ranger 输出，写出带唯一 barcode 和 µm 坐标的原始对象。
 def step_load(project):
     prepare_project_dirs(project)
-    adata = load_visium_hd_data(project.SAMPLE_INFO, project.BIN_SIZE)
+    adata = load_visium_hd_data(project.SAMPLE_INFO, project.BIN_SIZE, project.PROJECT_DIR)
     adata.write(project.ADATA_RAW)
     return adata
 
@@ -67,7 +67,7 @@ def step_filter(project):
     return adata
 
 
-# 功能：在 CPU 环境执行聚类；大对象可改用独立 src/cluster_gpu.py。
+# 功能：在 CPU 环境执行聚类；大对象可改用独立 GPU 模块。
 def step_cluster_cpu(project):
     import scanpy as sc
 
