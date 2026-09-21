@@ -3,8 +3,18 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.colors import LinearSegmentedColormap
 
-from .runtime import embedding_limits, save_figure, spatial_scatter, write_result_readme
+from .runtime import (
+    NPG_SEQUENTIAL,
+    categorical_palette,
+    embedding_limits,
+    save_figure,
+    set_adata_palette,
+    spatial_scatter,
+    style_dotplot,
+    write_result_readme,
+)
 
 
 # 功能：固定所有分组 UMAP 的坐标范围和纵横比。
@@ -22,6 +32,7 @@ def cluster_plots(adata, cluster_key, out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     xlim, ylim = embedding_limits(adata)
+    set_adata_palette(adata, cluster_key)
 
     sc.pl.umap(
         adata,
@@ -52,8 +63,7 @@ def cluster_plots(adata, cluster_key, out_dir):
         save_figure(out_dir / "umap_cluster_by_group", fig)
 
     cluster_levels = adata.obs[cluster_key].astype("category").cat.categories
-    cluster_colors = adata.uns.get(f"{cluster_key}_colors", plt.get_cmap("tab20").colors)
-    palette = dict(zip(cluster_levels, cluster_colors))
+    palette = categorical_palette(cluster_levels)
     for sample in adata.obs["sample"].drop_duplicates():
         tmp = adata[adata.obs["sample"] == sample]
         fig, ax = plt.subplots(figsize=(7, 7))
@@ -104,9 +114,11 @@ def marker_genes(adata, cluster_key, out_dir, method="wilcoxon", top_n=5):
         groupby=cluster_key,
         n_genes=top_n,
         standard_scale="var",
-        cmap="bwr",
+        cmap=LinearSegmentedColormap.from_list("npg_dotplot", NPG_SEQUENTIAL),
+        smallest_dot=18,
         show=False,
     )
+    style_dotplot()
     save_figure(out_dir / f"dotplot_top{top_n}_markers")
 
     categories = adata.obs[cluster_key].astype("category").cat.categories
@@ -142,12 +154,12 @@ def annotate_bins(adata, cluster_key, annotation_file, out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     xlim, ylim = embedding_limits(adata)
+    set_adata_palette(adata, "celltype")
     sc.pl.umap(adata, color="celltype", title="Bin annotation", legend_loc="right margin", show=False)
     _fix_embedding_axes(plt.gca(), xlim, ylim)
     save_figure(out_dir / "umap_annotation")
 
-    colors = adata.uns.get("celltype_colors", plt.get_cmap("tab20").colors)
-    palette = dict(zip(adata.obs["celltype"].cat.categories, colors))
+    palette = categorical_palette(adata.obs["celltype"].cat.categories)
     for sample in adata.obs["sample"].drop_duplicates():
         tmp = adata[adata.obs["sample"] == sample]
         fig, ax = plt.subplots(figsize=(7, 7))

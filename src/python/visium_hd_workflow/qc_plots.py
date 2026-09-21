@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .runtime import save_figure
+from .runtime import categorical_palette, save_figure
 
 
 STANDARD_METRICS = (
@@ -101,16 +101,9 @@ def threshold_candidates(
     return pd.DataFrame(rows)
 
 
-# 优先采用配置的样本色；其余样本按顺序使用 tab10 颜色。
+# 优先采用配置的样本色；其余样本按固定 NPG 顺序着色。
 def _palette(samples, configured=None):
-    import matplotlib.pyplot as plt
-
-    configured = configured or {}
-    fallback = plt.get_cmap("tab10")
-    return {
-        sample: configured.get(sample, fallback(index % 10))
-        for index, sample in enumerate(samples)
-    }
+    return categorical_palette(samples, configured)
 
 
 # 选择最接近目标分位数的候选阈值，并按样本建立索引。
@@ -173,7 +166,7 @@ def _violin(data, samples, colors, reference, title, path, dpi):
                         threshold,
                         position - 0.34,
                         position + 0.34,
-                        color="#B2182B",
+                        color="#E64B35",
                         linestyle="--",
                         linewidth=1.05,
                     )
@@ -335,11 +328,11 @@ def _density(data, samples, reference, title, path, dpi):
         min_genes = _value(reference, sample, "min_genes")
         complexity = _value(reference, sample, "min_log10GenesPerUMI")
         if min_counts is not None:
-            axes[row, 0].axvline(np.log10(min_counts + 1), color="#B2182B", linestyle="--")
+            axes[row, 0].axvline(np.log10(min_counts + 1), color="#E64B35", linestyle="--")
         if min_genes is not None:
-            axes[row, 0].axhline(np.log10(min_genes + 1), color="#B2182B", linestyle="--")
+            axes[row, 0].axhline(np.log10(min_genes + 1), color="#E64B35", linestyle="--")
         if complexity is not None:
-            axes[row, -1].axhline(complexity, color="#B2182B", linestyle="--")
+            axes[row, -1].axhline(complexity, color="#E64B35", linestyle="--")
         if has_bin_count:
             for column, style in (
                 ("min_bin_count_reference", "--"),
@@ -348,11 +341,11 @@ def _density(data, samples, reference, title, path, dpi):
                 threshold = _value(reference, sample, column)
                 if threshold is not None:
                     axes[row, 1].axvline(
-                        threshold, color="#B2182B", linestyle=style
+                        threshold, color="#E64B35", linestyle=style
                     )
             if min_counts is not None:
                 axes[row, 1].axhline(
-                    np.log10(min_counts + 1), color="#B2182B", linestyle="--"
+                    np.log10(min_counts + 1), color="#E64B35", linestyle="--"
                 )
     fig.suptitle(title, fontsize=14, y=1.005)
     fig.tight_layout()
@@ -406,7 +399,7 @@ def plot_qc_review(
     references=None,
     candidate_quantile=0.10,
     sample_colors=None,
-    dpi=300,
+    dpi=600,
 ) -> pd.DataFrame:
     """输出全样本、逐样本和密度/分布/保留率 QC 面板。"""
     out_dir = Path(out_dir)

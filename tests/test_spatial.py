@@ -4,6 +4,7 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 
+from visium_hd_workflow.runtime import NPG_COLORS, categorical_palette
 from visium_hd_workflow.spatial import (
     nearest_neighbor_table,
     neighborhood_composition,
@@ -62,6 +63,13 @@ class SpatialIsolationTests(unittest.TestCase):
         result = two_group_tests(table, "proportion", ["CN"], method="welch_ttest")
         self.assertEqual(result.loc[0, "test_method"], "welch_ttest")
         self.assertEqual(result.loc[0, "p_signif"], "***")
+
+    # 功能：验证正式分类图使用固定 NPG 顺序并支持超过十类。
+    def test_npg_palette_order_and_extension(self):
+        labels = [f"C{x}" for x in range(12)]
+        palette = categorical_palette(labels)
+        self.assertEqual([palette[x] for x in labels[:10]], list(NPG_COLORS))
+        self.assertEqual(len(set(palette.values())), 12)
 
 
 if __name__ == "__main__":

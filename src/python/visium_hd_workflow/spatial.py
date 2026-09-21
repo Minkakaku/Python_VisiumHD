@@ -3,16 +3,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.colors import LinearSegmentedColormap
 from scipy.spatial import cKDTree
 from scipy.stats import mannwhitneyu, ttest_ind
 
-from .runtime import group_palette, save_figure, spatial_scatter, write_result_readme
-
-
-NPG15 = (
-    "#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F",
-    "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85",
-    "#D3B3E5", "#E6A176", "#5F9F8B", "#6C79A8", "#C85C74",
+from .runtime import (
+    NPG_DIVERGING,
+    categorical_palette,
+    group_palette,
+    save_figure,
+    spatial_scatter,
+    write_result_readme,
 )
 
 
@@ -84,7 +85,7 @@ def cn_group_comparison(sample_table, out_dir, n_clusters, group_colors=None):
     pooled = sample_table.pivot_table(index="group", columns="CN", values="n_cells", aggfunc="sum", fill_value=0)
     pooled = pooled.reindex(index=group_order, columns=cn_order, fill_value=0)
     pooled = pooled.div(pooled.sum(axis=1), axis=0)
-    colors = dict(zip(cn_order, NPG15[:n_clusters]))
+    colors = categorical_palette(cn_order)
     x = np.arange(len(group_order))
     bottoms = np.zeros(len(group_order))
     fig, ax = plt.subplots(figsize=(4.8, 5.2))
@@ -218,7 +219,7 @@ def cell_neighborhoods(
     enrichment.to_csv(out_dir / f"CNs_{n_clusters}_log2_enrichment.tsv", sep="\t")
     grid = sns.clustermap(
         enrichment,
-        cmap="coolwarm",
+        cmap=LinearSegmentedColormap.from_list("npg_diverging", NPG_DIVERGING),
         center=0,
         vmin=-2,
         vmax=2,
@@ -237,7 +238,7 @@ def cell_neighborhoods(
     tests = cn_group_comparison(long, out_dir, n_clusters, group_colors)
     tests.to_csv(out_dir / f"CNs_{n_clusters}_group_tests.tsv", sep="\t", index=False)
 
-    cn_palette = dict(zip(adata.obs[cn_col].cat.categories, NPG15[:n_clusters]))
+    cn_palette = categorical_palette(adata.obs[cn_col].cat.categories)
     for sample in adata.obs["sample"].drop_duplicates():
         tmp = adata[adata.obs["sample"] == sample]
         fig, ax = plt.subplots(figsize=(7, 7))
