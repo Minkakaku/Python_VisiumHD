@@ -1,11 +1,16 @@
-# Python Visium HD 项目代码约定
+# Python_VisiumHD 公共分析代码规范
 
+- 本仓库保存同类分析跨项目复用的 Python 代码；具体项目放在 `projects/<项目>/`。
+- 复用方法放在 `src/python/`；公共默认放在 `config/`；环境放在 `envs/`。
+- 项目配置覆盖公共默认；样本、QC、注释和路径放在项目 `config/`。
+- 项目 `workflow/` 使用编号短脚本，只加载配置、调用公共方法并记录日志；已运行脚本不覆盖。
+- 模板 project1 仅是使用示例，不代表已完成分析；实际项目数据、结果和日志不提交。
+- 中间对象放在项目 `data/processed/`，正式图表放在项目 `results/编号_分析点/`。
+- 不在公共代码写项目路径、样本名或固定注释；不改写历史来源档案。
+- 保留 QC 和人工注释检查点；不同候选方法不自动全部串行执行。
+- 目录变更同步更新安装配置、入口、说明和测试。默认不引入工作流引擎。
 - 正式平台是 Python/Scanpy Visium HD，默认读取 Space Ranger 的 8 µm square-bin 输出。
-- 跨项目复用函数放在 `src/python/`；公共默认放在根目录 `config/`；样本、阈值和人工注释放在 `projects/<项目>/config/`。
-- 每个项目的 `workflow/` 只放按执行顺序编号的短入口；已运行脚本不覆盖，重跑或改参时新增下一编号脚本。
 - 正式入口只用 `.py`；原始 notebook 和脚本逐字节保存在 `legacy/original/`，不得直接修改。
-- `visium_hd_workflow.cluster_gpu` 是独立 RAPIDS/CuPy/RMM 聚类入口，CPU 主流程不强制安装 GPU 依赖。
-- 不在 `src/python/` 写项目编号、样本名、绝对路径、固定 cluster 注释或固定 ROI。
 - 多样本对象使用 `sample:barcode` 唯一索引；空间邻接、距离和 CN 必须按样本分别计算。
 - 组间统计先汇总到样本层面；Visium HD bins 不是独立生物学重复，也不等同于分割细胞。
 - 中间 H5AD 写入项目 `data/processed/`；最终图、表和中文说明写入项目对应的 `results/` 分析点目录。

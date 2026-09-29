@@ -1,21 +1,21 @@
-# project1
+# Python_VisiumHD 示例项目
 
-这是一个可复制的新项目入口。样本、阈值和人工注释放在 `config/`，短入口放在 `workflow/`，中间 H5AD 写入 `data/processed/`，最终图表写入 `results/`。
+这是未运行的项目示例。复制整个目录到 `projects/<实际项目名>/`，再修改 config；不复制共享 src。
 
-在仓库根目录安装公共环境和包：
+项目参数覆盖仓库公共默认。请记录实际数据来源、样本分组、参考版本、关键参数、运行时间和结论；数据、图表、日志不提交。样本表以项目 config 中实际加载的表为唯一来源。
 
-```bash
-conda env create -f envs/environment.yaml
-conda activate visium-hd-workflow
-pip install -e .
-```
+步骤：
+- `00_setup.py`
+- `01_load.py`
+- `02_qc.py`
+- `03_filter.py`
+- `04_cluster_cpu.py`
+- `04_cluster_gpu.py`
+- `05_cluster_markers.py`
+- `06_annotation.py`
+- `07_spatial_statistics.py`
+- `08_cell_neighborhood.py`
+- `09_proximity.py`
+- `10_nearest_neighbor.py`
 
-修改 `config/samples.tsv` 和 `config/config.yaml` 后，从仓库根目录逐步运行：
-
-```bash
-python projects/project1/workflow/00_setup.py
-python projects/project1/workflow/01_load.py
-python projects/project1/workflow/02_qc.py
-```
-
-QC 后人工确认 `config/qc_thresholds.tsv`，再运行 `03_filter.py`。marker 完成后人工确认 `config/cluster_annotation.tsv`，再运行注释及空间分析。已运行的 workflow 文件不要覆盖；参数改变时新增下一编号脚本。
+先准备并检查输入；QC 和人工注释后再执行下游。独立分析方法是可选入口，不要求全部运行。详细环境与命令见仓库 README。

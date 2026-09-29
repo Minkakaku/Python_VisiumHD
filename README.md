@@ -1,80 +1,69 @@
-# Python-visium-hd-workflow-template
+# Python_VisiumHD
 
-这是从原始 Visium HD notebook、`CN.py` 和 Space Ranger v4 命令整理出的分层 Python 主流程。公共方法与项目运行记录分开管理，正式入口全部使用 `.py`；原始文件完整保存在 `legacy/original/`。
+跨项目复用的 Python 公共分析代码库。仓库管理公共方法、默认配置、环境和项目示例；实际项目在 `projects/<项目名>/` 使用这些方法，数据和运行产物不提交 Git。
 
-默认分析单位是 Space Ranger `square_008um` 的 8 µm bin，也支持 Space Ranger v4 分割结果。两者不能混为一谈：bin 注释表示主要表达特征，只有明确使用 `input_mode=segmented` 时才是分割单元。
-
-## 项目结构
+## 目录
 
 ```text
-├── src/python/visium_hd_workflow/   # 跨项目复用函数与分析步骤
-├── src/python/visium_hd_workflow/   # CPU 主流程、GPU 聚类和 Space Ranger 入口
-├── config/                          # 公共默认与参考配置
-├── projects/project1/               # 项目配置、workflow、数据、结果和日志
-├── envs/                            # 公共 CPU/GPU 环境
-├── tests/
-└── legacy/original/                 # 未修改的原始代码
+src/python/       公共分析方法与配置加载器
+config/            公共默认参数与参考配置
+envs/              共享环境定义
+projects/project1/ 示例项目（未运行）
+  config/          项目覆盖、样本表、QC/注释等人工决策
+  workflow/        编号短脚本与分阶段 runner
+  data/processed/  中间对象
+  data/reference/  项目参考资源
+  results/         按分析点保存图表与中文说明
+  logs/            运行记录
+tests/             路径和项目配置检查
 ```
 
-`config/default.yaml` 和 `config/reference.yaml` 提供公共值，`projects/project1/config/config.yaml` 按同名键覆盖。样本表、QC 阈值和人工注释放在项目自己的 `config/`。
+## 新项目
 
-## 正式分析点
-
-| 顺序 | 项目结果目录 | 方法入口 | 作用 |
-|---|---|---|---|
-| 01 | `results/01_Data_QC/` | `step_qc()` | 全样本/逐样本 QC、候选保留率和阈值建议 |
-| 02 | `results/02_Bin_filter/` | `step_filter()` | 按人工确认的逐样本阈值过滤 |
-| 03 | `results/03_Dimension_reduction_cluster/` | `step_cluster_cpu()` 或 GPU 模块 | HVG、PCA 自动拐点、可选 Harmony、UMAP、Leiden |
-| 04 | `results/04_Marker_gene_analysis/` | `marker_genes()` | 全基因 log-normalized raw 上的 Wilcoxon marker |
-| 05 | `results/05_Bin_annotation/` | `step_annotation()` | cluster 显式映射、空间图和样本比例 |
-| 06 | `results/06_Spatial_statistics/` | `step_spatial_statistics()` | 逐切片空间图中心性和可选 Moran's I |
-| 07 | `results/07_Cell_neighborhood/` | `step_cell_neighborhood()` | 逐切片 kNN 组成、CN、样本比例 Welch 检验和组别 alluvial 图 |
-| 08 | `results/08_Proximity_analysis/` | `step_proximity()` | 半径邻近与距离环带 |
-| 09 | `results/09_Nearest_neighbor/` | `step_nearest_neighbor()` | 不同注释之间的最近距离 |
-
-表中的 `results/` 均位于具体项目下，例如 `projects/project1/results/`。
-
-## 安装
+在仓库根目录执行：
 
 ```bash
 conda env create -f envs/environment.yaml
-conda activate visium-hd-workflow
-pip install -e .
+python -m pip install -e .
+cp -R projects/project1 projects/my_project
 ```
 
-GPU 环境使用 `envs/environment-gpu.yaml`，要求 NVIDIA 驱动与匹配的 CUDA。
+修改 `projects/my_project/config/config.yaml` 和样本/注释表，准备输入对象与参考文件。示例中的物种、reference、root、分组和文件名必须按真实项目核对，不能直接作为生物学结论。
 
-Space Ranger 可先检查生成的命令：
+每个编号脚本可单独执行；脚本从自身位置定位项目，因此复制后不会继续写入 project1。Python 包项目先完成 editable install。
 
 ```bash
-python -m visium_hd_workflow.run_spaceranger --config projects/project1/config/spaceranger.yaml --dry-run
+python projects/my_project/workflow/00_setup.py
 ```
 
-## 新项目开始
+可用步骤：
+- `00_setup.py`
+- `01_load.py`
+- `02_qc.py`
+- `03_filter.py`
+- `04_cluster_cpu.py`
+- `04_cluster_gpu.py`
+- `05_cluster_markers.py`
+- `06_annotation.py`
+- `07_spatial_statistics.py`
+- `08_cell_neighborhood.py`
+- `09_proximity.py`
+- `10_nearest_neighbor.py`
 
-1. 复制 `projects/project1/` 为新的项目目录。
-2. 修改项目 `config/samples.tsv`、`config/config.yaml` 和可选的 `config/spaceranger.yaml`。
-3. 从 `workflow/00_setup.py` 开始逐步运行短入口；已运行脚本不要覆盖，参数变化时新增下一编号脚本。
-4. QC 后人工确认 `config/qc_thresholds.tsv`，marker 后人工确认 `config/cluster_annotation.tsv`。
+`run_all.sh` 对主流程只运行到 QC 检查点；独立分析方法需显式选择步骤，避免把不同候选方法混为同一条流程。已运行脚本不改写，重跑新增编号并使用新输出目录。
 
-完整说明见 [新项目指南](docs/new_project.md) 和 [project1 README](projects/project1/README.md)。
+## 配置与路径
 
-## GPU 聚类示例
+公共 `config/default.yaml` → `config/reference.yaml` → 项目 `config/config.yaml`，后者覆盖前者。嵌套映射按键合并，列表和标量整体替换。共享方法接收配置/参数，不包含实际项目路径与样本名。项目相对输入输出路径以项目目录为基准；参考文件路径写在配置中。
+
+## 结果与解释
+
+最终图保存同名 PNG/PDF，配套 CSV/TSV 和 `README_results_CN.md` 放在分析点结果目录。中间对象放在 `data/processed/`。细胞或空间 bins 不作为独立生物学重复；条件比较用样本级汇总。方法特有约束见 [AGENTS.md](AGENTS.md) 和公共代码注释。
+
+## 验证
 
 ```bash
-python -m visium_hd_workflow.cluster_gpu \
-  --input projects/project1/data/processed/02_adata_filtered.h5ad \
-  --output projects/project1/data/processed/03_adata_clustered.h5ad \
-  --result-dir projects/project1/results/03_Dimension_reduction_cluster \
-  --resolution 0.4 0.5 0.6 0.7
+python tests/test_project_layout.py
 ```
 
-不传 `--n-pcs` 时使用 `kneed.KneeLocator` 自动识别 PCA 拐点。该结果是参考值；复杂组织和稀有群仍应比较邻近 PC 数下的稳定性。
-
-## 关键修正
-
-- 多样本 barcode 使用 `sample:barcode`，空间图、CN、proximity 和 nearest-neighbor 均逐样本计算。
-- marker 默认使用 Wilcoxon，并确保 `raw` 保存完整基因。
-- 组间统计先汇总到样本层面，不把 bins 当作独立生物学重复。
-- CN 每个样本内先计算比例；双组箱线图使用 Welch t-test，组别 alluvial 图展示组内全部单位合并后的 100% 组成。
-- 正式图输出同名 PNG/PDF，绘图输入和统计结果保存 TSV。
+此检查验证配置、路径或安全导入，不运行真实组学分析。完整分析需要对应生信依赖、真实输入数据和人工 QC/注释。

@@ -26,3 +26,7 @@ cn_neighbors: 10
 cn_clusters: [10, 15]
 proximity_radius_um: 50
 proximity_bins_um: [0, 50, 100, 150, 200]
+
+group_colors:
+  CON: "#72b1b9"
+  EXP: "#f6ae00"
