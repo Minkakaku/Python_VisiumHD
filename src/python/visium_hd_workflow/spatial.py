@@ -300,6 +300,76 @@ def proximity_sample_summary(
 
 
 # 功能：绘制样本级邻近比例和距离环带曲线，并保存双组检验表。
+def proximity_sample_summary_fast(adata, radius=50, distance_bins=(0, 50, 100, 150, 200),
+                                  celltype_col="celltype", coord_key="spatial", workers=1,
+                                  return_cell_proportions=False):
+    """与Xenium模板proximity_sample_summary同口径的低内存实现。
+
+    坐标单位µm；各样本独立KD树。半径比例先逐细胞计算，再对来源类型求均值；
+    无邻居细胞贡献全零。环带严格为(low, high]，输出计数的细胞间中位数，
+    不做面积标准化。不同细胞的重合坐标在半径内计数，在第一个环带中排除。
+    通过目标类型树的累计计数避免存储数亿条邻接边；不抽样、不改变统计口径。
+    return_cell_proportions=True时额外返回逐细胞宽表，用于描述性分布图。
+    """
+    values = adata.obs[celltype_col]
+    levels = ([str(x) for x in values.cat.categories] if isinstance(values.dtype, pd.CategoricalDtype)
+              else sorted(pd.unique(values.astype(str)).tolist()))
+    edges = np.asarray(distance_bins, dtype=float)
+    if radius <= 0 or len(edges) < 2 or edges[0] < 0 or np.any(np.diff(edges) <= 0):
+        raise ValueError("Invalid radius or distance bins")
+    radius_rows, annulus_rows, cell_frames = [], [], []
+    for sample in adata.obs["sample"].drop_duplicates():
+        tmp = adata[adata.obs["sample"] == sample]
+        coords = np.asarray(tmp.obsm[coord_key], dtype=float)
+        types = tmp.obs[celltype_col].astype(str).to_numpy()
+        if coords.shape != (len(types), 2) or not np.isfinite(coords).all():
+            raise ValueError("Coordinates must be finite 2D positions in micrometres")
+        if tmp.obs["group"].nunique() != 1:
+            raise ValueError("Each sample must belong to exactly one group")
+        group = str(tmp.obs["group"].iloc[0])
+        radius_counts = np.zeros((len(types), len(levels)), dtype=np.int32)
+        ring_counts = np.zeros((len(edges)-1, len(types), len(levels)), dtype=np.int32)
+        for j, target in enumerate(levels):
+            target_mask = types == target
+            if not target_mask.any():
+                continue
+            tree = cKDTree(coords[target_mask])
+            cumulative = {r: tree.query_ball_point(coords, r, return_length=True, workers=workers)
+                          for r in sorted(set(edges.tolist() + [float(radius)]))}
+            radius_counts[:, j] = cumulative[float(radius)] - target_mask.astype(int)
+            for k, (low, high) in enumerate(zip(edges[:-1], edges[1:])):
+                ring_counts[k, :, j] = cumulative[high] - cumulative[low]
+        denominator = radius_counts.sum(axis=1, keepdims=True)
+        proportions = np.divide(radius_counts, denominator,
+                                out=np.zeros_like(radius_counts, dtype=float), where=denominator > 0)
+        assert (radius_counts >= 0).all() and (ring_counts >= 0).all()
+        if return_cell_proportions:
+            frame = pd.DataFrame(proportions, index=tmp.obs_names, columns=levels)
+            frame.index.name = "cell_id"
+            frame.insert(0, "neighbor_count", denominator.ravel())
+            frame.insert(0, "source_celltype", types)
+            frame.insert(0, "sample", sample)
+            cell_frames.append(frame)
+        for source in levels:
+            selected = types == source
+            n = int(selected.sum())
+            if not n:
+                continue
+            for target, value in zip(levels, proportions[selected].mean(axis=0)):
+                radius_rows.append(dict(sample=sample, group=group, source_celltype=source,
+                    target_celltype=target, proportion=float(value), source_cells=n))
+            for k, (low, high) in enumerate(zip(edges[:-1], edges[1:])):
+                for target, value in zip(levels, np.median(ring_counts[k, selected, :], axis=0)):
+                    annulus_rows.append(dict(sample=sample, group=group, source_celltype=source,
+                        target_celltype=target, distance_range=f"{low:g}-{high:g}",
+                        distance_mid=(low+high)/2, median_count=float(value), source_cells=n))
+    result = pd.DataFrame(radius_rows), pd.DataFrame(annulus_rows)
+    if return_cell_proportions:
+        return *result, pd.concat(cell_frames)
+    return result
+
+
+# 功能：绘制样本级邻近比例和距离环带曲线，并保存双组检验表。
 def proximity_analysis(adata, out_dir, radius=50, distance_bins=(0, 50, 100, 150, 200), group_colors=None):
     import seaborn as sns
 

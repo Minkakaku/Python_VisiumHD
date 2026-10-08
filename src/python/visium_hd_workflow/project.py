@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import yaml
 
 
+# 嵌套字典逐键合并，列表和标量由项目值整体覆盖。
 def merge_config(base, override):
     result = dict(base)
     for key, value in override.items():

@@ -1,0 +1,26 @@
+name: bin2cell
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip=25.1
+  - pip:
+      - setuptools==80.9.0
+      - numpy==1.26.4
+      - pandas==2.2.3
+      - scipy==1.13.1
+      - h5py==3.11.0
+      - matplotlib==3.9.4
+      - seaborn==0.13.2
+      - scanpy==1.10.4
+      - opencv-python==4.10.0.84
+      - scikit-image==0.24.0
+      - fastparquet==2024.11.0
+      - tifffile==2024.9.20
+      - pillow==11.1.0
+      - igraph==0.11.8
+      - leidenalg==0.10.2
+      - tensorflow-cpu==2.15.1
+      - stardist==0.9.1
+      - bin2cell==0.3.4
+      - harmonypy==0.0.10

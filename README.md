@@ -67,3 +67,9 @@ python tests/test_project_layout.py
 ```
 
 此检查验证配置、路径或安全导入，不运行真实组学分析。完整分析需要对应生信依赖、真实输入数据和人工 QC/注释。
+
+## 可选 Bin2Cell 与邻近统计
+
+`envs/bin2cell.yaml` 是可选环境定义；现有模板仍默认读取 8 µm bins。实际 2 µm Bin2Cell 项目的专用 workflow、注释和数据保留在项目内。
+
+`proximity_sample_summary_fast` 按样本独立使用 KD 树累计计数，坐标须为 µm；半径内先逐细胞计算邻居类型比例再取来源类型均值，无邻居计零。环带为 `(low, high]`，报告逐细胞计数的中位数，不按面积归一化。可返回逐细胞比例用于描述性图；输出列沿用 Xenium 邻近统计口径，区别于原有 `proximity_sample_summary` 的列名。`tests/test_proximity_fast.py` 用直接欧氏距离检查边界和隔离。
