@@ -3,6 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib import colormaps
 from matplotlib.colors import LinearSegmentedColormap, to_hex
 
 
@@ -12,6 +13,12 @@ NPG_COLORS = (
 )
 NPG_SEQUENTIAL = ("#FFF5F0", "#F39B7F", "#E64B35", "#7A0019")
 NPG_DIVERGING = ("#3C5488", "#F7F7F7", "#E64B35")
+
+# 未指定颜色的折线与连续图也使用 NPG，显式绘图参数仍可覆盖。
+for name, colors in (("npg_sequential", NPG_SEQUENTIAL), ("npg_diverging", NPG_DIVERGING)):
+    if name not in colormaps:
+        colormaps.register(LinearSegmentedColormap.from_list(name, colors))
+plt.rcParams.update({"axes.prop_cycle": plt.cycler(color=NPG_COLORS), "image.cmap": "npg_sequential"})
 
 
 REPORT_STEPS = (

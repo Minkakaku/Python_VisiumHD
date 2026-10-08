@@ -1,7 +1,7 @@
 # project1 的参数会覆盖 config/default.yaml 与 config/reference.yaml 中的同名项。
 group_colors:
-  CON: "#72b1b9"
-  EXP: "#f6ae00"
+  CON: "#E64B35"
+  EXP: "#4DBBD5"
 
 # 只填写本项目需要展示或计算 Moran's I 的基因。
 spatial_genes: []

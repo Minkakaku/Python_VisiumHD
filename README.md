@@ -2,6 +2,8 @@
 
 跨项目复用的 Python 公共分析代码库。仓库管理公共方法、默认配置、环境和项目示例；实际项目在 `projects/<项目名>/` 使用这些方法，数据和运行产物不提交 Git。
 
+`visium_hd_workflow.spatial_plot_helpers` 汇总实际项目提取的空间绘图函数：方格并集轮廓与孔洞、阵列到 H&E 的仿射配准、等面积随机/手动视野、H&E 裁剪与比例尺、跨面板共享表达上限、固定画布的带标签/无标签 PNG/PDF 导出。调用者传入真实坐标、边界、标签和颜色；这些方法不运行 Bin2Cell、改变分析 ROI 或重新注释。检查：`python -m pytest -q tests/test_spatial_plot_helpers.py`。
+
 ## 目录
 
 ```text

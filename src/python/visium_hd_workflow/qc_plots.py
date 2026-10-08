@@ -320,7 +320,7 @@ def _density(data, samples, reference, title, path, dpi):
         for column, (x, y, xlabel, ylabel) in enumerate(panels):
             valid = np.isfinite(x) & np.isfinite(y)
             axis = axes[row, column]
-            axis.hexbin(x[valid], y[valid], gridsize=80, bins="log", mincnt=1, cmap="Blues")
+            axis.hexbin(x[valid], y[valid], gridsize=80, bins="log", mincnt=1, cmap="npg_sequential")
             axis.set(xlabel=xlabel, ylabel=ylabel, title=f"{sample}: QC density")
             axis.spines[["top", "right"]].set_visible(False)
             axis.grid(False)

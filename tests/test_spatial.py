@@ -1,5 +1,6 @@
 import unittest
 
+import matplotlib.pyplot as plt
 import anndata as ad
 import numpy as np
 import pandas as pd
@@ -70,6 +71,15 @@ class SpatialIsolationTests(unittest.TestCase):
         palette = categorical_palette(labels)
         self.assertEqual([palette[x] for x in labels[:10]], list(NPG_COLORS))
         self.assertEqual(len(set(palette.values())), 12)
+        self.assertEqual(categorical_palette(["C0"], {"C0": "black"})["C0"], "black")
+        # 核对实际 Matplotlib 图元的默认颜色，而非仅核对常量。
+        fig, ax = plt.subplots()
+        try:
+            colors = [ax.plot([0, 1], [0, 1])[0].get_color() for _ in range(2)]
+            self.assertEqual(colors, list(NPG_COLORS[:2]))
+            self.assertEqual(ax.imshow(np.zeros((2, 2))).get_cmap().name, "npg_sequential")
+        finally:
+            plt.close(fig)
 
 
 if __name__ == "__main__":

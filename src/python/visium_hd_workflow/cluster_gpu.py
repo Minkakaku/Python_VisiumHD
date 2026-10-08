@@ -81,7 +81,7 @@ def run_gpu_clustering(
     table.to_csv(result_dir / "pca_variance_and_selected_pc.tsv", sep="\t", index=False)
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(table["PC"], table["variance_ratio"], marker="o", markersize=3)
-    ax.axvline(selected, linestyle="--", color="#D55E00", label=f"PC = {selected}")
+    ax.axvline(selected, linestyle="--", color="#E64B35", label=f"PC = {selected}")
     ax.set(xlabel="Principal component", ylabel="Variance ratio", title="Automatic PCA knee (GPU workflow)")
     ax.legend(frameon=False)
     ax.grid(False)
