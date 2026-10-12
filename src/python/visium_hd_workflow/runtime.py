@@ -91,7 +91,7 @@ def set_adata_palette(adata, key, configured=None):
     return palette
 
 
-# 功能：把 Scanpy DotPlot 调整为紧凑白底、纵向 marker 标签和水平辅助线。
+# 功能：把 Scanpy DotPlot 调整为紧凑白底、纵向 marker 标签，仅保留外框而不画内部辅助线。
 def style_dotplot(fig=None):
     fig = fig or plt.gcf()
     for ax in fig.axes:
@@ -100,8 +100,7 @@ def style_dotplot(fig=None):
         ax.set_facecolor("white")
         ax.tick_params(axis="x", rotation=90)
         ax.set_axisbelow(True)
-        ax.xaxis.grid(False)
-        ax.yaxis.grid(True, color="#E6E6E6", linewidth=0.5)
+        ax.grid(False, which="both", axis="both")
         for spine in ax.spines.values():
             spine.set_visible(True)
             spine.set_color("black")
